@@ -9,6 +9,7 @@ pluginManagement {
     includeBuild("gradle/plugins/linting-conventions")
     includeBuild("gradle/plugins/publishing-conventions")
     includeBuild("gradle/plugins/versions-conventions")
+    includeBuild("test/suitegen")
 }
 
 plugins {

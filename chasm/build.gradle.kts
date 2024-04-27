@@ -8,6 +8,7 @@ plugins {
     id("kmp-conventions")
     id("linting-conventions")
     id("publishing-conventions")
+    id("chasm-suitegen-plugin")
 }
 
 kotlin {
