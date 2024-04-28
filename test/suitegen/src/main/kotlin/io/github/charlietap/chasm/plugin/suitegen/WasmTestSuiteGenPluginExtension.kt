@@ -12,6 +12,8 @@ open class WasmTestSuiteGenPluginExtension @Inject constructor(
 
     val testSuiteGenDirectory: Property<String> = objects.property(String::class.java).convention(DIR_TEST_GEN)
 
+    val wabtDirectory: Property<String> = objects.property(String::class.java).convention(DIR_WABT)
+
     val proposals: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
 
     val excludes: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
@@ -20,5 +22,6 @@ open class WasmTestSuiteGenPluginExtension @Inject constructor(
     private companion object {
         const val DIR_TEST_SUITE = "wasm-testsuite"
         const val DIR_TEST_GEN = "wasm-testsuite-gen"
+        const val DIR_WABT = "wasm-wabt"
     }
 }

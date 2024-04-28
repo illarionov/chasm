@@ -1,6 +1,6 @@
 package io.github.charlietap.chasm.plugin.suitegen
 
-import io.github.charlietap.chasm.plugin.suitegen.task.SyncWasmTestSuiteTask
+import io.github.charlietap.chasm.plugin.suitegen.task.SyncRepositoryTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.create
@@ -13,14 +13,24 @@ class WasmTestSuiteGenPlugin : Plugin<Project> {
         val extension = project.extensions
             .create<WasmTestSuiteGenPluginExtension>("chasm-suitegen-plugin-extension")
 
-        project.tasks.register<SyncWasmTestSuiteTask>(
+        project.tasks.register<SyncRepositoryTask>(
             TASK_NAME_SYNC_SUITE,
         ).configure {
             description = TASK_DESCRIPTION_SYNC_SUITE
             group = GROUP
 
             repositoryUrl.set(URL_TESTSUITE)
-            testSuiteDirectory.set(project.layout.buildDirectory.dir(extension.testSuiteDirectory))
+            outputDirectory.set(project.layout.buildDirectory.dir(extension.testSuiteDirectory))
+        }
+
+        project.tasks.register<SyncRepositoryTask>(
+            TASK_NAME_SYNC_WABT,
+        ).configure {
+            description = TASK_DESCRIPTION_SYNC_WABT
+            group = GROUP
+
+            repositoryUrl.set(URL_WABT)
+            outputDirectory.set(project.layout.buildDirectory.dir(extension.wabtDirectory))
         }
 
 
@@ -29,11 +39,14 @@ class WasmTestSuiteGenPlugin : Plugin<Project> {
     private companion object {
 
         const val URL_TESTSUITE = "https://github.com/WebAssembly/testsuite.git"
+        const val URL_WABT = "https://github.com/WebAssembly/wabt.git"
 
         const val GROUP = "suitegen"
 
         const val TASK_NAME_SYNC_SUITE = "syncWasmTestSuite"
+        const val TASK_NAME_SYNC_WABT = "syncWabt"
 
         const val TASK_DESCRIPTION_SYNC_SUITE = "Clones/Updates the wasm test suite"
+        const val TASK_DESCRIPTION_SYNC_WABT = "Clones/Updates the wabt"
     }
 }
