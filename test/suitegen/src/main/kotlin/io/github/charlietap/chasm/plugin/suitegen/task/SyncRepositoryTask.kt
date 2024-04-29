@@ -1,5 +1,6 @@
 package io.github.charlietap.chasm.plugin.suitegen.task
 
+import java.nio.file.Files
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Exec
@@ -15,10 +16,7 @@ abstract class SyncRepositoryTask : Exec() {
     abstract val outputDirectory: DirectoryProperty
 
     override fun exec() {
-
-        val outputDir = outputDirectory.get().asFile
-
-        if (outputDir.exists() && outputDir.isDirectory) {
+        if (repositoryHasBeenCloned()) {
             workingDir = outputDirectory.get().asFile
             commandLine = listOf(
                 "git", "pull",
@@ -30,5 +28,16 @@ abstract class SyncRepositoryTask : Exec() {
         }
 
         super.exec()
+    }
+
+    private fun repositoryHasBeenCloned(): Boolean {
+
+        val outputDir = outputDirectory.get().asFile
+
+        return if(outputDir.exists() && outputDir.isDirectory) {
+            val path = outputDir.toPath()
+
+            Files.list(path).findAny().isPresent
+        } else false
     }
 }

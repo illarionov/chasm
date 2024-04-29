@@ -1,3 +1,4 @@
+import io.github.charlietap.chasm.plugin.suitegen.WasmTestSuiteGenPluginExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -57,6 +58,10 @@ kotlin {
 configure<PublishingConventionsExtension> {
     name = "chasm"
     description = "A wasm runtime for Kotlin Multiplatform"
+}
+
+configure<WasmTestSuiteGenPluginExtension> {
+    wabtVersion = "1.0.34"
 }
 
 tasks.withType<KotlinCompile>().configureEach {

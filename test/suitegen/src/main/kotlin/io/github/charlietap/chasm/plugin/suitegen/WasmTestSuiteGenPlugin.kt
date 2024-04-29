@@ -1,5 +1,6 @@
 package io.github.charlietap.chasm.plugin.suitegen
 
+import io.github.charlietap.chasm.plugin.suitegen.task.DownloadWabtTask
 import io.github.charlietap.chasm.plugin.suitegen.task.SyncRepositoryTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -20,18 +21,21 @@ class WasmTestSuiteGenPlugin : Plugin<Project> {
             group = GROUP
 
             repositoryUrl.set(URL_TESTSUITE)
-            outputDirectory.set(project.layout.buildDirectory.dir(extension.testSuiteDirectory))
+            outputDirectory.set(extension.testSuiteDirectory)
         }
 
-        project.tasks.register<SyncRepositoryTask>(
-            TASK_NAME_SYNC_WABT,
+        project.tasks.register<DownloadWabtTask>(
+            TASK_NAME_DOWNLOAD_WABT,
         ).configure {
-            description = TASK_DESCRIPTION_SYNC_WABT
+            description = TASK_DESCRIPTION_DOWNLOAD_WABT
             group = GROUP
 
-            repositoryUrl.set(URL_WABT)
-            outputDirectory.set(project.layout.buildDirectory.dir(extension.wabtDirectory))
+            wabtVersion.set(extension.wabtVersion)
+            outputDirectory.set(extension.wabtDirectory)
         }
+
+
+
 
 
     }
@@ -44,9 +48,9 @@ class WasmTestSuiteGenPlugin : Plugin<Project> {
         const val GROUP = "suitegen"
 
         const val TASK_NAME_SYNC_SUITE = "syncWasmTestSuite"
-        const val TASK_NAME_SYNC_WABT = "syncWabt"
+        const val TASK_NAME_DOWNLOAD_WABT = "downloadWabt"
 
         const val TASK_DESCRIPTION_SYNC_SUITE = "Clones/Updates the wasm test suite"
-        const val TASK_DESCRIPTION_SYNC_WABT = "Clones/Updates the wabt"
+        const val TASK_DESCRIPTION_DOWNLOAD_WABT = "Downloads the wabt cli"
     }
 }
