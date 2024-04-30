@@ -1,33 +1,48 @@
 package io.github.charlietap.chasm.plugin.suitegen.task
 
 import java.nio.file.Files
+import javax.inject.Inject
+import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 
-abstract class SyncRepositoryTask : Exec() {
+@CacheableTask
+abstract class SyncRepositoryTask : DefaultTask() {
 
     @get:Input
     abstract val repositoryUrl: Property<String>
 
+    @get:Input
+    abstract val commitHash: Property<String>
+
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
-    override fun exec() {
+    @get:Inject
+    abstract val cli: ExecOperations
+
+    @TaskAction
+    fun sync() {
         if (repositoryHasBeenCloned()) {
-            workingDir = outputDirectory.get().asFile
-            commandLine = listOf(
-                "git", "pull",
-            )
+             cli.exec {
+                workingDir = outputDirectory.get().asFile
+                commandLine("git", "fetch", "--all")
+             }
         } else {
-            commandLine = listOf(
-                "git", "clone", repositoryUrl.get(), outputDirectory.get().asFile.absolutePath,
-            )
+            cli.exec {
+                commandLine("git", "clone", repositoryUrl.get(), outputDirectory.get().asFile.absolutePath,)
+            }
         }
 
-        super.exec()
+        cli.exec {
+            workingDir = outputDirectory.get().asFile
+            commandLine("git", "checkout", commitHash.get())
+        }
     }
 
     private fun repositoryHasBeenCloned(): Boolean {

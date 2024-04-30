@@ -1,6 +1,7 @@
 package io.github.charlietap.chasm.plugin.suitegen
 
-import io.github.charlietap.chasm.plugin.suitegen.task.DownloadWabtTask
+import io.github.charlietap.chasm.plugin.suitegen.task.PrepareTestSuite
+import io.github.charlietap.chasm.plugin.suitegen.task.ResolveWast2JsonTask
 import io.github.charlietap.chasm.plugin.suitegen.task.SyncRepositoryTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -14,24 +15,45 @@ class WasmTestSuiteGenPlugin : Plugin<Project> {
         val extension = project.extensions
             .create<WasmTestSuiteGenPluginExtension>("chasm-suitegen-plugin-extension")
 
-        project.tasks.register<SyncRepositoryTask>(
+        val syncRepositoryTask = project.tasks.register<SyncRepositoryTask>(
             TASK_NAME_SYNC_SUITE,
-        ).configure {
+        ) {
             description = TASK_DESCRIPTION_SYNC_SUITE
             group = GROUP
 
             repositoryUrl.set(URL_TESTSUITE)
+            commitHash.set(extension.testSuiteCommit)
             outputDirectory.set(extension.testSuiteDirectory)
         }
 
-        project.tasks.register<DownloadWabtTask>(
-            TASK_NAME_DOWNLOAD_WABT,
-        ).configure {
-            description = TASK_DESCRIPTION_DOWNLOAD_WABT
+        val resolveWast2JsonTask = project.tasks.register<ResolveWast2JsonTask>(
+            TASK_NAME_RESOLVE_W2J,
+        ) {
+            description = TASK_DESCRIPTION_RESOLVE_W2J
             group = GROUP
 
             wabtVersion.set(extension.wabtVersion)
-            outputDirectory.set(extension.wabtDirectory)
+            outputFile.set(project.layout.buildDirectory.file("wast2json"))
+        }
+
+        project.tasks.register<PrepareTestSuite>(
+            TASK_NAME_PREPARE_SUITE,
+        ) {
+            description = TASK_DESCRIPTION_PREPARE_SUITE
+            group = GROUP
+
+            inputFiles.apply {
+                from(syncRepositoryTask.flatMap { it.outputDirectory })
+                include("*.wast")
+                extension.proposals.get().forEach { proposal ->
+                    include("proposals/$proposal/*.wast")
+                }
+                exclude(extension.excludes.get())
+                builtBy(syncRepositoryTask)
+            }
+
+            wast2Json.set(resolveWast2JsonTask.flatMap { it.outputFile })
+            outputDirectory.set(extension.testSuiteGenDirectory)
         }
 
 
@@ -43,14 +65,15 @@ class WasmTestSuiteGenPlugin : Plugin<Project> {
     private companion object {
 
         const val URL_TESTSUITE = "https://github.com/WebAssembly/testsuite.git"
-        const val URL_WABT = "https://github.com/WebAssembly/wabt.git"
 
         const val GROUP = "suitegen"
 
         const val TASK_NAME_SYNC_SUITE = "syncWasmTestSuite"
-        const val TASK_NAME_DOWNLOAD_WABT = "downloadWabt"
+        const val TASK_NAME_RESOLVE_W2J = "resolveWast2Json"
+        const val TASK_NAME_PREPARE_SUITE = "prepareTestSuite"
 
-        const val TASK_DESCRIPTION_SYNC_SUITE = "Clones/Updates the wasm test suite"
-        const val TASK_DESCRIPTION_DOWNLOAD_WABT = "Downloads the wabt cli"
+        const val TASK_DESCRIPTION_SYNC_SUITE = "Clones/Updates the wasm test suite to the given commit"
+        const val TASK_DESCRIPTION_RESOLVE_W2J = "Searches for wastjson on the local filesystem"
+        const val TASK_DESCRIPTION_PREPARE_SUITE = "Prepare the wasm test suite for generation by running wast2json"
     }
 }

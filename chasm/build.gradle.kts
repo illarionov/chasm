@@ -62,6 +62,9 @@ configure<PublishingConventionsExtension> {
 
 configure<WasmTestSuiteGenPluginExtension> {
     wabtVersion = "1.0.34"
+    testSuiteCommit = "16a839d5601c283541a84572b47637f035b51437"
+    proposals = listOf("tail-call", "extended-const")
+    excludes = listOf("**/comments.wast","**/if.wast")
 }
 
 tasks.withType<KotlinCompile>().configureEach {

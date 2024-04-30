@@ -13,7 +13,7 @@ open class WasmTestSuiteGenPluginExtension @Inject constructor(
 ) {
     val wabtVersion: Property<String> = objects.property(String::class.java)
 
-    val wabtDirectory: DirectoryProperty = objects.directoryProperty().convention(layout.buildDirectory.dir(DIR_WABT))
+    val testSuiteCommit: Property<String> = objects.property(String::class.java)
 
     val testSuiteDirectory: DirectoryProperty = objects.directoryProperty().convention(layout.buildDirectory.dir(DIR_TEST_SUITE))
 
@@ -26,6 +26,5 @@ open class WasmTestSuiteGenPluginExtension @Inject constructor(
     private companion object {
         const val DIR_TEST_SUITE = "wasm-testsuite"
         const val DIR_TEST_GEN = "wasm-testsuite-gen"
-        const val DIR_WABT = "wasm-wabt"
     }
 }
