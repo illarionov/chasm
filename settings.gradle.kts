@@ -9,7 +9,6 @@ pluginManagement {
     includeBuild("gradle/plugins/linting-conventions")
     includeBuild("gradle/plugins/publishing-conventions")
     includeBuild("gradle/plugins/versions-conventions")
-    includeBuild("test/suitegen")
 }
 
 plugins {
@@ -59,6 +58,8 @@ include(":test:fixture:executor:runtime")
 include(":validator")
 
 includeBuild("example")
+includeBuild("sweet")
+
 
 rootProject.name = "chasm-multiplatform"
 
