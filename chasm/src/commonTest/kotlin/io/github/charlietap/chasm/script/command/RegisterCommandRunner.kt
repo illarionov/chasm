@@ -9,6 +9,10 @@ fun RegisterCommandRunner(
     context: ScriptContext,
     command: RegisterCommand,
 ): CommandResult {
-    println("ignoring RegisterCommand")
+
+    val instance = context.instance(command.name)
+
+    context.registerImports(command.registerAs, instance.exports)
+
     return CommandResult.Success
 }

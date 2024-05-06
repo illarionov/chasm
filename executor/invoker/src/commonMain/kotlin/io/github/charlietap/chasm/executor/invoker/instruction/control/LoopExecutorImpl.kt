@@ -42,16 +42,16 @@ internal inline fun LoopExecutorImpl(
     val frame = stack.peekFrame().bind()
 
     val functionType = expander(frame.state.module, blockType).bind()
-    val (paramArity, resultArity) = functionType?.let {
-        Arity.Argument(functionType.params.types.size) to Arity.Return(functionType.results.types.size)
-    } ?: (Arity.Argument.NULLARY to Arity.Return.SIDE_EFFECT)
+    val paramArity = functionType?.let {
+        Arity.Argument(functionType.params.types.size)
+    } ?: Arity.Argument.NULLARY
 
     val params = List(paramArity.value) {
         stack.popValue().bind().value
     }
 
     val label = Stack.Entry.Label(
-        arity = resultArity,
+        arity = paramArity,
         continuation = listOf(ControlInstruction.Loop(blockType, instructions)),
     )
 

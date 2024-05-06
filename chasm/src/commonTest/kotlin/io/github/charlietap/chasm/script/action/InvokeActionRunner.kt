@@ -3,7 +3,7 @@ package io.github.charlietap.chasm.script.action
 import io.github.charlietap.chasm.embedding.invoke
 import io.github.charlietap.chasm.expect
 import io.github.charlietap.chasm.script.ScriptContext
-import io.github.charlietap.chasm.script.ValueMapper
+import io.github.charlietap.chasm.script.value.ValueMapper
 import io.github.charlietap.chasm.script.action.ActionResult.Success
 import io.github.charlietap.sweet.lib.action.InvokeAction
 

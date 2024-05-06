@@ -84,7 +84,7 @@ data class Stack(
         value class Value(val value: ExecutionValue) : Entry
 
         data class Label(
-            val arity: Arity.Return,
+            val arity: Arity,
             val continuation: List<Instruction>,
         ) : Entry
 

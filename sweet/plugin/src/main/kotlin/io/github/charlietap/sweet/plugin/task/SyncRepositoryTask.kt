@@ -35,7 +35,8 @@ abstract class SyncRepositoryTask : DefaultTask() {
              }
         } else {
             cli.exec {
-                commandLine("git", "clone", repositoryUrl.get(), outputDirectory.get().asFile.absolutePath,)
+                workingDir = outputDirectory.get().asFile
+                commandLine("git", "clone", repositoryUrl.get(), outputDirectory.get().asFile.absolutePath)
             }
         }
 

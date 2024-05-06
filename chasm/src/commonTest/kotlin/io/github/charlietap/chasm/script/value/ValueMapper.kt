@@ -1,4 +1,4 @@
-package io.github.charlietap.chasm.script
+package io.github.charlietap.chasm.script.value
 
 import io.github.charlietap.chasm.ast.type.AbstractHeapType
 import io.github.charlietap.chasm.executor.runtime.store.Address

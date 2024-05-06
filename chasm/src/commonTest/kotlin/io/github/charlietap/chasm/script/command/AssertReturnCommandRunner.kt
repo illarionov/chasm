@@ -1,9 +1,10 @@
 package io.github.charlietap.chasm.script.command
 
 import io.github.charlietap.chasm.script.ScriptContext
-import io.github.charlietap.chasm.script.ValueMapper
+import io.github.charlietap.chasm.script.value.ValueMapper
 import io.github.charlietap.chasm.script.action.ActionResult
 import io.github.charlietap.chasm.script.action.ActionRunner
+import io.github.charlietap.chasm.script.ext.mismatchTemplate
 import io.github.charlietap.sweet.lib.command.AssertReturnCommand
 
 typealias AssertReturnCommandRunner = (ScriptContext, AssertReturnCommand) -> CommandResult
@@ -39,11 +40,3 @@ fun AssertReturnCommandRunner(
         }
     }
 }
-
-private fun mismatchTemplate(expected: Any, actual: Any): String = """
-
-Arguments returned are a mismatch
-
-Expected: $expected
-Actual: $actual
-    """.trimIndent()
