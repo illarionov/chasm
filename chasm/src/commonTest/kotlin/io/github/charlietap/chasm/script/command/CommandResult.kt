@@ -4,7 +4,7 @@ import io.github.charlietap.sweet.lib.command.Command
 
 sealed interface CommandResult {
 
-    data object Success: CommandResult
+    data object Success : CommandResult
 
     data class Failure(
         val command: Command,
