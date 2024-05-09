@@ -3,7 +3,9 @@
 package io.github.charlietap.chasm.executor.invoker.instruction.table
 
 import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.asErr
 import com.github.michaelbull.result.binding
 import com.github.michaelbull.result.toResultOr
 import io.github.charlietap.chasm.ast.instruction.TableInstruction
@@ -31,45 +33,58 @@ internal fun TableInitExecutorImpl(
         tableSetExecutor = ::TableSetExecutorImpl,
     )
 
-internal fun TableInitExecutorImpl(
+internal tailrec fun TableInitExecutorImpl(
     store: Store,
     stack: Stack,
     instruction: TableInstruction.TableInit,
     tableSetExecutor: TableSetExecutor,
-): Result<Unit, InvocationError> = binding {
+): Result<Unit, InvocationError> {
+    val elementsToInitialiseResult = binding {
 
-    val frame = stack.peekFrame().bind()
-    val tableAddress = frame.state.module.tableAddress(instruction.tableIdx.index()).bind()
-    val tableInstance = store.table(tableAddress).bind()
+        val frame = stack.peekFrame().bind()
+        val tableAddress = frame.state.module.tableAddress(instruction.tableIdx.index()).bind()
+        val tableInstance = store.table(tableAddress).bind()
 
-    val elementAddress = frame.state.module.elementAddress(instruction.elemIdx.index()).bind()
-    val elementInstance = store.element(elementAddress).bind()
+        val elementAddress = frame.state.module.elementAddress(instruction.elemIdx.index()).bind()
+        val elementInstance = store.element(elementAddress).bind()
 
-    val elementsToInitialise = stack.popI32().bind()
-    val segmentOffset = stack.popI32().bind()
-    val tableOffset = stack.popI32().bind()
+        val elementsToInitialise = stack.popI32().bind()
+        val segmentOffset = stack.popI32().bind()
+        val tableOffset = stack.popI32().bind()
 
-    if (
-        segmentOffset + elementsToInitialise > elementInstance.elements.size ||
-        tableOffset + elementsToInitialise > tableInstance.elements.size
-    ) {
-        Err(InvocationError.Trap.TrapEncountered).bind<Unit>()
+        if (
+            segmentOffset + elementsToInitialise > elementInstance.elements.size ||
+            tableOffset + elementsToInitialise > tableInstance.elements.size
+        ) {
+            Err(InvocationError.Trap.TrapEncountered).bind<Unit>()
+        }
+
+        if (elementsToInitialise == 0) return@binding 0
+
+        val referenceValue = elementInstance.elements.getOrNull(segmentOffset).toResultOr {
+            InvocationError.ElementReferenceLookupFailed(segmentOffset)
+        }.bind()
+
+        stack.push(Stack.Entry.Value(NumberValue.I32(tableOffset)))
+        stack.push(Stack.Entry.Value(referenceValue))
+
+        tableSetExecutor(store, stack, TableInstruction.TableSet(instruction.tableIdx)).bind()
+
+        stack.push(Stack.Entry.Value(NumberValue.I32(tableOffset + 1)))
+        stack.push(Stack.Entry.Value(NumberValue.I32(segmentOffset + 1)))
+        stack.push(Stack.Entry.Value(NumberValue.I32(elementsToInitialise - 1)))
+
+        elementsToInitialise
     }
 
-    if (elementsToInitialise == 0) return@binding
-
-    val referenceValue = elementInstance.elements.getOrNull(segmentOffset).toResultOr {
-        InvocationError.ElementReferenceLookupFailed(segmentOffset)
-    }.bind()
-
-    stack.push(Stack.Entry.Value(NumberValue.I32(tableOffset)))
-    stack.push(Stack.Entry.Value(referenceValue))
-
-    tableSetExecutor(store, stack, TableInstruction.TableSet(instruction.tableIdx)).bind()
-
-    stack.push(Stack.Entry.Value(NumberValue.I32(tableOffset + 1)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(segmentOffset + 1)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(elementsToInitialise - 1)))
-
-    TableInitExecutorImpl(store, stack, instruction, tableSetExecutor).bind()
+    return when {
+        elementsToInitialiseResult.isOk -> {
+            if (elementsToInitialiseResult.value != 0) {
+                TableInitExecutorImpl(store, stack, instruction, tableSetExecutor)
+            } else {
+                Ok(Unit)
+            }
+        }
+        else -> elementsToInitialiseResult.asErr()
+    }
 }
