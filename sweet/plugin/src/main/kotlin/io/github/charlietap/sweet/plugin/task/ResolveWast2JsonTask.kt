@@ -10,6 +10,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
@@ -18,6 +19,7 @@ import org.gradle.process.ExecOperations
 abstract class ResolveWast2JsonTask : DefaultTask() {
 
     @get:Input
+    @get:Optional
     abstract val wabtVersion: Property<String>
 
     @get:OutputFile
@@ -56,8 +58,8 @@ abstract class ResolveWast2JsonTask : DefaultTask() {
 
         val version = versionBytes.toString().trim()
 
-        if(version != wabtVersion.get()) {
-            throw GradleException("Wast2JsonTask does not support version $wabtVersion")
+        if(wabtVersion.isPresent && version != wabtVersion.get()) {
+            throw GradleException("Wast2JsonTask does not support version ${wabtVersion.get()}")
         }
     }
 }

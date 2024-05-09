@@ -65,7 +65,7 @@ configure<PublishingConventionsExtension> {
 }
 
 configure<WasmTestSuiteGenPluginExtension> {
-    wabtVersion = "1.0.34"
+    //wabtVersion = "1.0.34"
     testSuiteCommit = "16a839d5601c283541a84572b47637f035b51437"
     scriptRunner = "io.github.charlietap.chasm.script.ChasmScriptRunner"
     testPackageName = "io.github.charlietap.chasm"
