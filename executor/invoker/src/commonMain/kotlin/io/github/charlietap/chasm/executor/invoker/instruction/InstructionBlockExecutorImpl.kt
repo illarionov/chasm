@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package io.github.charlietap.chasm.executor.invoker.instruction
 
 import com.github.michaelbull.result.Result
@@ -11,13 +13,13 @@ import io.github.charlietap.chasm.executor.runtime.ext.popValue
 import io.github.charlietap.chasm.executor.runtime.store.Store
 import io.github.charlietap.chasm.executor.runtime.value.ExecutionValue
 
-internal fun InstructionBlockExecutorImpl(
+internal inline fun InstructionBlockExecutorImpl(
     store: Store,
     stack: Stack,
     label: Stack.Entry.Label,
     instructions: List<Instruction>,
     params: List<ExecutionValue>,
-): Result<Unit, InvocationError> =
+): Result<List<Instruction>, InvocationError> =
     InstructionBlockExecutorImpl(
         store = store,
         stack = stack,
@@ -27,14 +29,14 @@ internal fun InstructionBlockExecutorImpl(
         instructionExecutor = ::InstructionExecutorImpl,
     )
 
-internal fun InstructionBlockExecutorImpl(
+internal inline fun InstructionBlockExecutorImpl(
     store: Store,
     stack: Stack,
     label: Stack.Entry.Label,
     instructions: List<Instruction>,
     params: List<ExecutionValue>,
-    instructionExecutor: InstructionExecutor,
-): Result<Unit, InvocationError> = binding {
+    crossinline instructionExecutor: InstructionExecutor,
+): Result<List<Instruction>, InvocationError> = binding {
 
     stack.push(label)
 
@@ -63,9 +65,9 @@ internal fun InstructionBlockExecutorImpl(
             exception.results.forEach { value ->
                 stack.push(Stack.Entry.Value(value))
             }
-            exception.continuation.forEach { instruction ->
-                instructionExecutor(instruction, store, stack).bind()
-            }
+            return@binding exception.continuation
         }
     }
+
+    emptyList()
 }

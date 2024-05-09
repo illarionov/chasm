@@ -3,6 +3,7 @@ package io.github.charlietap.chasm.executor.invoker.instruction
 import com.github.michaelbull.result.Ok
 import io.github.charlietap.chasm.ast.instruction.NumericInstruction
 import io.github.charlietap.chasm.executor.invoker.flow.BreakException
+import io.github.charlietap.chasm.executor.runtime.Stack
 import io.github.charlietap.chasm.executor.runtime.value.NumberValue
 import io.github.charlietap.chasm.fixture.label
 import io.github.charlietap.chasm.fixture.stack
@@ -53,7 +54,7 @@ class InstructionBlockExecutorImplTest {
             instructionExecutor = instructionExecutor,
         )
 
-        assertEquals(Ok(Unit), actual)
+        assertEquals(Ok(emptyList()), actual)
         assertEquals(0, stack.labelsDepth())
     }
 
@@ -129,24 +130,16 @@ class InstructionBlockExecutorImplTest {
             NumberValue.I32(117),
         )
 
-        val instructionIter = (instructions + continuation).iterator()
+        val instructionIter = (instructions).iterator()
         val paramsIter = (params + results).iterator()
 
-        var hasManipulatedStack = false
         val instructionExecutor: InstructionExecutor = { passedInstruction, passedStore, passedStack ->
             assertEquals(instructionIter.next(), passedInstruction)
             assertEquals(store, passedStore)
             assertEquals(stack, passedStack)
             assertEquals(paramsIter.next(), stack.popValueOrNull()?.value)
 
-            if (!hasManipulatedStack) {
-                repeat(3) { _ ->
-                    stack.push(value())
-                }
-                hasManipulatedStack = true
-                throw BreakException(0, results, continuation)
-            }
-            Ok(Unit) // result of continuation
+            throw BreakException(0, results, continuation)
         }
 
         val actual = InstructionBlockExecutorImpl(
@@ -158,8 +151,8 @@ class InstructionBlockExecutorImplTest {
             instructionExecutor = instructionExecutor,
         )
 
-        assertEquals(Ok(Unit), actual)
+        assertEquals(Ok(continuation), actual)
         assertEquals(0, stack.labelsDepth())
-        assertEquals(0, stack.valuesDepth())
+        assertEquals(results, stack.values().map(Stack.Entry.Value::value))
     }
 }

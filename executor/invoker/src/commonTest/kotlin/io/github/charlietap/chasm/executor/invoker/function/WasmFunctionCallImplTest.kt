@@ -107,7 +107,7 @@ class WasmFunctionCallImplTest {
             assertEquals(frame, stack.peekFrameOrNull())
             assertEquals(1, stack.framesDepth())
 
-            Ok(Unit)
+            Ok(emptyList())
         }
 
         val actual = WasmFunctionCallImpl(
@@ -201,7 +201,7 @@ class WasmFunctionCallImplTest {
             assertEquals(frame, stack.peekFrameOrNull())
             assertEquals(1, stack.framesDepth())
 
-            Ok(Unit)
+            Ok(emptyList())
         }
 
         val actual = WasmFunctionCallImpl(
