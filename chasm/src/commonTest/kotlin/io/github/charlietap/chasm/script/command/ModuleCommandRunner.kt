@@ -19,8 +19,11 @@ fun ModuleCommandRunner(
 
     return module(bytes).flatMap { module ->
         instance(context.store, module, context.imports)
-    }.fold({
-        context.instances[command.name] = it
+    }.fold({ instance ->
+        context.instances[null] = instance
+        command.name?.let {
+            context.instances[command.name] = instance
+        }
         CommandResult.Success
     }) {
         CommandResult.Failure(command, "Failed to instantiate module: $it")

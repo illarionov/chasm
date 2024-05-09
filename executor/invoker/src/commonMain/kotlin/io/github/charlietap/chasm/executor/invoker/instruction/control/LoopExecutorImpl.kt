@@ -40,20 +40,23 @@ internal inline fun LoopExecutorImpl(
 ): Result<Unit, InvocationError> = binding {
 
     val frame = stack.peekFrame().bind()
-
     val functionType = expander(frame.state.module, blockType).bind()
     val paramArity = functionType?.let {
         Arity.Argument(functionType.params.types.size)
     } ?: Arity.Argument.NULLARY
 
-    val params = List(paramArity.value) {
-        stack.popValue().bind().value
+    var instructionsToExecute = instructions
+    while (instructionsToExecute.isNotEmpty()) {
+
+        val params = List(paramArity.value) {
+            stack.popValue().bind().value
+        }
+
+        val label = Stack.Entry.Label(
+            arity = paramArity,
+            continuation = instructions,
+        )
+
+        instructionsToExecute = instructionBlockExecutor(store, stack, label, instructions, params).bind()
     }
-
-    val label = Stack.Entry.Label(
-        arity = paramArity,
-        continuation = listOf(ControlInstruction.Loop(blockType, instructions)),
-    )
-
-    instructionBlockExecutor(store, stack, label, instructions, params).bind()
 }
