@@ -2,7 +2,9 @@
 
 package io.github.charlietap.chasm.executor.invoker.instruction.memory
 
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.asErr
 import com.github.michaelbull.result.binding
 import io.github.charlietap.chasm.ast.instruction.MemArg
 import io.github.charlietap.chasm.executor.invoker.instruction.memory.store.I32StoreSizedExecutor
@@ -23,26 +25,37 @@ internal inline fun MemoryFillExecutorImpl(
         storeSizedSignedExecutor = ::I32StoreSizedExecutorImpl,
     )
 
-internal fun MemoryFillExecutorImpl(
+internal tailrec fun MemoryFillExecutorImpl(
     store: Store,
     stack: Stack,
     storeSizedSignedExecutor: I32StoreSizedExecutor,
-): Result<Unit, InvocationError> = binding {
+): Result<Unit, InvocationError> {
+    val bytesToFillResult = binding {
+        val bytesToFill = stack.popI32().bind()
+        val fillValue = stack.popI32().bind()
+        val offset = stack.popI32().bind()
 
-    val bytesToFill = stack.popI32().bind()
-    val fillValue = stack.popI32().bind()
-    val offset = stack.popI32().bind()
+        if (bytesToFill != 0) {
+            stack.push(Stack.Entry.Value(NumberValue.I32(offset)))
+            stack.push(Stack.Entry.Value(NumberValue.I32(fillValue)))
 
-    if (bytesToFill == 0) return@binding
+            storeSizedSignedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
 
-    stack.push(Stack.Entry.Value(NumberValue.I32(offset)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(fillValue)))
+            stack.push(Stack.Entry.Value(NumberValue.I32(offset + 1)))
+            stack.push(Stack.Entry.Value(NumberValue.I32(fillValue)))
+            stack.push(Stack.Entry.Value(NumberValue.I32(bytesToFill - 1)))
+        }
+        bytesToFill
+    }
 
-    storeSizedSignedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
-
-    stack.push(Stack.Entry.Value(NumberValue.I32(offset + 1)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(fillValue)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(bytesToFill - 1)))
-
-    MemoryFillExecutorImpl(store, stack, storeSizedSignedExecutor).bind()
+    return when {
+        bytesToFillResult.isOk -> {
+            if (bytesToFillResult.value != 0) {
+                MemoryFillExecutorImpl(store, stack, storeSizedSignedExecutor)
+            } else {
+                Ok(Unit)
+            }
+        }
+        else -> bytesToFillResult.asErr()
+    }
 }

@@ -2,7 +2,9 @@
 
 package io.github.charlietap.chasm.executor.invoker.instruction.memory
 
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.asErr
 import com.github.michaelbull.result.binding
 import io.github.charlietap.chasm.ast.instruction.MemArg
 import io.github.charlietap.chasm.executor.invoker.instruction.memory.load.I32SizedUnsignedLoadExecutor
@@ -26,36 +28,49 @@ internal inline fun MemoryCopyExecutorImpl(
         i32StoreSizedExecutor = ::I32StoreSizedExecutorImpl,
     )
 
-internal fun MemoryCopyExecutorImpl(
+internal tailrec fun MemoryCopyExecutorImpl(
     store: Store,
     stack: Stack,
     i32SizedUnsignedLoadExecutor: I32SizedUnsignedLoadExecutor,
     i32StoreSizedExecutor: I32StoreSizedExecutor,
-): Result<Unit, InvocationError> = binding {
+): Result<Unit, InvocationError> {
+    val bytesToCopyResult = binding {
 
-    val bytesToCopy = stack.popI32().bind()
-    val sourceOffset = stack.popI32().bind()
-    val destinationOffset = stack.popI32().bind()
+        val bytesToCopy = stack.popI32().bind()
+        val sourceOffset = stack.popI32().bind()
+        val destinationOffset = stack.popI32().bind()
 
-    if (bytesToCopy == 0) return@binding
+        if (bytesToCopy != 0) {
 
-    if (destinationOffset <= sourceOffset) {
-        stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset)))
-        stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset)))
-        i32SizedUnsignedLoadExecutor(store, stack, MemArg(0u, 0u), 1).bind()
-        i32StoreSizedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
-        stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset + 1)))
-        stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset + 1)))
-    } else {
-        stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset + bytesToCopy - 1)))
-        stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset + bytesToCopy - 1)))
-        i32SizedUnsignedLoadExecutor(store, stack, MemArg(0u, 0u), 1).bind()
-        i32StoreSizedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
-        stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset)))
-        stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset)))
+            if (destinationOffset <= sourceOffset) {
+                stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset)))
+                stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset)))
+                i32SizedUnsignedLoadExecutor(store, stack, MemArg(0u, 0u), 1).bind()
+                i32StoreSizedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
+                stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset + 1)))
+                stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset + 1)))
+            } else {
+                stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset + bytesToCopy - 1)))
+                stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset + bytesToCopy - 1)))
+                i32SizedUnsignedLoadExecutor(store, stack, MemArg(0u, 0u), 1).bind()
+                i32StoreSizedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
+                stack.push(Stack.Entry.Value(NumberValue.I32(destinationOffset)))
+                stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset)))
+            }
+
+            stack.push(Stack.Entry.Value(NumberValue.I32(bytesToCopy - 1)))
+        }
+        bytesToCopy
     }
 
-    stack.push(Stack.Entry.Value(NumberValue.I32(bytesToCopy - 1)))
-
-    MemoryCopyExecutorImpl(store, stack, i32SizedUnsignedLoadExecutor, i32StoreSizedExecutor).bind()
+    return when {
+        bytesToCopyResult.isOk -> {
+            if (bytesToCopyResult.value != 0) {
+                MemoryCopyExecutorImpl(store, stack, i32SizedUnsignedLoadExecutor, i32StoreSizedExecutor)
+            } else {
+                Ok(Unit)
+            }
+        }
+        else -> bytesToCopyResult.asErr()
+    }
 }
