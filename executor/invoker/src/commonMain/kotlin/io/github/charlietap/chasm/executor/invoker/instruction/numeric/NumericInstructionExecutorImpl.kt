@@ -197,11 +197,11 @@ internal fun NumericInstructionExecutorImpl(
         is NumericInstruction.F32DemoteF64 -> stack.convertOperation(::F32, Double::toFloat).bind()
         is NumericInstruction.F64PromoteF32 -> stack.convertOperation(::F64, Float::toDouble).bind()
 
-        is NumericInstruction.F32ReinterpretI32 -> stack.convertOperation(::I32, Float::toBits).bind()
-        is NumericInstruction.F64ReinterpretI64 -> stack.convertOperation(::I64, Double::toBits).bind()
+        is NumericInstruction.F32ReinterpretI32 -> stack.convertOperation(::F32, Float::fromBits).bind()
+        is NumericInstruction.F64ReinterpretI64 -> stack.convertOperation(::F64, Double::fromBits).bind()
 
-        is NumericInstruction.I32ReinterpretF32 -> stack.convertOperation(::F32, Float::fromBits).bind()
-        is NumericInstruction.I64ReinterpretF64 -> stack.convertOperation(::F64, Double::fromBits).bind()
+        is NumericInstruction.I32ReinterpretF32 -> stack.convertOperation(::I32, Float::toRawBits).bind()
+        is NumericInstruction.I64ReinterpretF64 -> stack.convertOperation(::I64, Double::toRawBits).bind()
 
         is NumericInstruction.I32Extend8S -> stack.unaryOperation(Int::extend8s).bind()
         is NumericInstruction.I32Extend16S -> stack.unaryOperation(Int::extend16s).bind()

@@ -58,7 +58,7 @@ sealed interface InvocationError : ModuleRuntimeError {
     data object MemoryOperationOutOfBounds : InvocationError
 
     @JvmInline
-    value class TableGrowExceedsLimits(val max: UInt) : InvocationError
+    value class TableGrowExceedsLimits(val proposed: UInt) : InvocationError
 
     data object InvalidAddress : InvocationError
 

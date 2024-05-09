@@ -48,7 +48,11 @@ internal inline fun Long.countTrailingZero(): Long = countTrailingZeroBits().toL
 
 internal inline fun Long.convertF32s(): Float = this.toFloat()
 
-internal inline fun Long.convertF32u(): Float = this.toULong().toFloat()
+internal inline fun Long.convertF32u(): Float = if (this < 0) {
+    toULong().toFloat()
+} else {
+    toFloat()
+}
 
 internal inline fun Long.convertF64s(): Double = this.toDouble()
 
