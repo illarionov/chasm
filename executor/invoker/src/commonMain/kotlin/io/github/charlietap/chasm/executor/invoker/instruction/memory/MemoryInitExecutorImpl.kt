@@ -3,7 +3,9 @@
 package io.github.charlietap.chasm.executor.invoker.instruction.memory
 
 import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.asErr
 import com.github.michaelbull.result.binding
 import io.github.charlietap.chasm.ast.instruction.MemArg
 import io.github.charlietap.chasm.ast.instruction.MemoryInstruction
@@ -33,39 +35,50 @@ internal inline fun MemoryInitExecutorImpl(
         i32StoreSizedExecutor = ::I32StoreSizedExecutorImpl,
     )
 
-internal fun MemoryInitExecutorImpl(
+internal tailrec fun MemoryInitExecutorImpl(
     store: Store,
     stack: Stack,
     instruction: MemoryInstruction.MemoryInit,
     i32StoreSizedExecutor: I32StoreSizedExecutor,
-): Result<Unit, InvocationError> = binding {
-    val frame = stack.peekFrame().bind()
-    val memoryAddress = frame.state.module.memoryAddress(0).bind()
-    val memory = store.memory(memoryAddress).bind()
+): Result<Unit, InvocationError> {
+    val bytesToCopy = binding {
+        val frame = stack.peekFrame().bind()
+        val memoryAddress = frame.state.module.memoryAddress(0).bind()
+        val memory = store.memory(memoryAddress).bind()
 
-    val dataAddress = frame.state.module.dataAddress(instruction.dataIdx.index()).bind()
-    val data = store.data(dataAddress).bind()
+        val dataAddress = frame.state.module.dataAddress(instruction.dataIdx.index()).bind()
+        val data = store.data(dataAddress).bind()
 
-    val bytesToCopy = stack.popI32().bind()
-    val sourceOffset = stack.popI32().bind()
-    val dataSegmentIndex = stack.popI32().bind()
+        val bytesToCopy = stack.popI32().bind()
+        val sourceOffset = stack.popI32().bind()
+        val dataSegmentIndex = stack.popI32().bind()
 
-    if ((sourceOffset + bytesToCopy) > data.bytes.size || (dataSegmentIndex + bytesToCopy) > memory.data.size()) {
-        Err(InvocationError.Trap.TrapEncountered).bind<Unit>()
+        if ((sourceOffset + bytesToCopy) > data.bytes.size || (dataSegmentIndex + bytesToCopy) > memory.data.size()) {
+            Err(InvocationError.Trap.TrapEncountered).bind<Unit>()
+        }
+
+        if (bytesToCopy != 0) {
+            val byte = data.bytes[sourceOffset]
+
+            stack.push(Stack.Entry.Value(NumberValue.I32(dataSegmentIndex)))
+            stack.push(Stack.Entry.Value(NumberValue.I32(byte.toInt())))
+
+            i32StoreSizedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
+
+            stack.push(Stack.Entry.Value(NumberValue.I32(dataSegmentIndex + 1)))
+            stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset + 1)))
+            stack.push(Stack.Entry.Value(NumberValue.I32(bytesToCopy - 1)))
+        }
+        bytesToCopy
     }
-
-    if (bytesToCopy == 0) return@binding
-
-    val byte = data.bytes[sourceOffset]
-
-    stack.push(Stack.Entry.Value(NumberValue.I32(dataSegmentIndex)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(byte.toInt())))
-
-    i32StoreSizedExecutor(store, stack, MemArg(0u, 0u), 1).bind()
-
-    stack.push(Stack.Entry.Value(NumberValue.I32(dataSegmentIndex + 1)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(sourceOffset + 1)))
-    stack.push(Stack.Entry.Value(NumberValue.I32(bytesToCopy - 1)))
-
-    MemoryInitExecutorImpl(store, stack, instruction, i32StoreSizedExecutor).bind()
+    return when {
+        bytesToCopy.isOk -> {
+            if (bytesToCopy.value != 0) {
+                MemoryInitExecutorImpl(store, stack, instruction, i32StoreSizedExecutor)
+            } else {
+                Ok(Unit)
+            }
+        }
+        else -> bytesToCopy.asErr()
+    }
 }
